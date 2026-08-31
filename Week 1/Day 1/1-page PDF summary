@@ -1,0 +1,129 @@
+# Adult Census Income Classification Project
+
+Predicting individual income levels (`>50K` vs. `<=50K`) using census data to support targeted marketing outreach.
+
+---
+
+## Project Overview
+
+* **Task Type:** Binary Classification
+* **Target Variable:** `class`
+
+  * `1` → `>50K`
+  * `0` → `<=50K`
+* **Business Objective:** Focus outreach efforts on high-earning prospective customers to improve conversion rates and minimize wasted marketing budget.
+* **Dataset Size:** **48,842 records** across **14 input features**.
+
+---
+
+## Key Dataset Insights
+
+### Class Distribution
+
+The dataset is imbalanced, with the majority of individuals belonging to the `<=50K` class.
+
+| Income Class       |  Count | Percentage |
+| ------------------ | -----: | ---------: |
+| `<=50K` (Negative) | 37,155 |     76.07% |
+| `>50K` (Positive)  | 11,687 |     23.93% |
+
+### Data Splits
+
+The dataset was divided into training, development, and hold-out test sets:
+
+| Dataset       | Percentage |   Rows |
+| ------------- | ---------: | -----: |
+| Training      |        70% | 34,188 |
+| Development   |        10% |  4,885 |
+| Hold-out Test |        20% |  9,769 |
+
+The hold-out test set is reserved for final evaluation and is not used during model development or tuning.
+
+### Data Quality Issues
+
+Several missing and skewed features were identified during the initial EDA:
+
+* `occupation`: **2,809 missing values (5.75%)**
+* `workclass`: **2,799 missing values (5.73%)**
+* `native-country`: **857 missing values (1.75%)**
+* `capital-gain`: highly right-skewed, with a skewness of **11.89**
+* `capital-loss`: highly right-skewed, with a skewness of **4.57**
+
+---
+
+## Evaluation Framework
+
+### Primary Metric
+
+**F1 Score** was selected as the primary evaluation metric because it balances precision and recall. Precision is important for reducing incorrect high-income predictions and wasted outreach, while recall ensures that potential high-income individuals are not overlooked.
+
+### Secondary Metrics
+
+The following metrics are also reported:
+
+* Accuracy
+* Precision
+* Recall
+* ROC-AUC
+* PR-AUC
+
+---
+
+## Baseline Model Performance
+
+The following results were obtained on the hold-out test set:
+
+| Model                                     | Accuracy | Precision | Recall |   F1 Score |    ROC-AUC | PR-AUC |
+| ----------------------------------------- | -------: | --------: | -----: | ---------: | ---------: | -----: |
+| **Majority Baseline** (`pred = 0`)        |   0.7607 |    0.0000 | 0.0000 |     0.0000 |     0.5000 | 0.6197 |
+| **Rule Baseline** (`education-num >= 13`) |   0.7530 |    0.4844 | 0.4970 | **0.4906** | **0.6653** | 0.5509 |
+
+### Rule-Based Baseline Confusion Matrix
+
+| Outcome         | Count |
+| --------------- | ----: |
+| True Negatives  | 6,194 |
+| False Positives | 1,237 |
+| False Negatives | 1,176 |
+| True Positives  | 1,162 |
+
+The false positives primarily represent individuals predicted to earn more than $50K who actually earn $50K or less. The false negatives represent individuals who actually earn more than $50K but were not identified by the education-based rule.
+
+---
+
+## Initial Error Analysis
+
+The rule-based classifier provides a useful starting point but has clear limitations. The `education-num >= 13` rule identifies many high-income individuals but also produces false positives among individuals with higher education who earn below $50K. It also misses high-income individuals whose education level is below the threshold but who may have other characteristics associated with higher income, such as substantial capital gains or longer working hours.
+
+---
+
+## Next Steps & Roadmap
+
+### 1. Preprocessing
+
+* Handle missing categorical values through appropriate imputation.
+* Investigate transformations for highly skewed numerical features such as `capital-gain` and `capital-loss`.
+* Encode categorical variables for machine-learning models.
+
+### 2. Feature Engineering
+
+* Investigate meaningful feature interactions, such as `age × hours-per-week`.
+* Consider derived financial features such as net capital gain/loss.
+* Evaluate whether additional transformations improve model performance.
+
+### 3. Model Training
+
+Experiment with stronger classification models, including tree-based ensemble methods such as Random Forest and XGBoost.
+
+The initial target is to improve substantially over the rule-based baseline of **F1 = 0.4906**, with **F1 ≥ 0.65–0.70** as an aspirational modeling target.
+
+---
+
+## How to Run
+
+```bash
+git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY-NAME.git
+cd YOUR-REPOSITORY-NAME
+pip install -r requirements.txt
+jupyter notebook notebook.ipynb
+```
