@@ -1,0 +1,20 @@
+[
+  {
+    "customer_id": "C001",
+    "name": "Muhammad Naveed Mehdi",
+    "plan": "Pro",
+    "status": "active"
+  },
+  {
+    "customer_id": "C002",
+    "name": "Rahim Ijaz",
+    "plan": "Starter",
+    "status": "active"
+  },
+  {
+    "customer_id": "C003",
+    "name": "Aqeel Ahmad",
+    "plan": "Pro",
+    "status": "paused"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "product": "wireless keyboard",
+    "price": 45.0,
+    "currency": "USD"
+  },
+  {
+    "product": "mechanical keyboard",
+    "price": 95.0,
+    "currency": "USD"
+  },
+  {
+    "product": "ergonomic mouse",
+    "price": 35.0,
+    "currency": "USD"
+  }
+]
