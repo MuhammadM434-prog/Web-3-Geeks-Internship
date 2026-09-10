@@ -1,0 +1,13 @@
+ticket_id,category,sentiment,resolution_hours,repeat_contact,channel,customer_segment
+T001,Billing,negative,48,yes,email,SMB
+T002,Login,negative,12,no,chat,Consumer
+T003,Refund,negative,72,yes,email,Consumer
+T004,Shipping,neutral,36,no,web,SMB
+T005,Login,positive,2,no,chat,Consumer
+T006,Billing,negative,60,yes,email,Enterprise
+T007,Shipping,negative,96,yes,email,Consumer
+T008,Account,neutral,18,no,web,SMB
+T009,Refund,negative,80,yes,chat,Consumer
+T010,Billing,positive,8,no,chat,Enterprise
+T011,Login,negative,24,no,email,SMB
+T012,Shipping,neutral,30,no,web,Enterprise
