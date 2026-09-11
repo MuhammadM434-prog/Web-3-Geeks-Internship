@@ -1,0 +1,297 @@
+[
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "3f1765cb-36ea-4aba-b2c3-d9906f5e492b",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "d52cab21-6d42-4070-a8e8-9fe5d2620db6",
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "fb0bd832-8e88-48b4-9f18-7959bbb30eb6",
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "26215da3-d183-4162-834c-9c6dba3be414",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "49563d38-54fa-4406-87f8-e99cd3718b1b",
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "5185d75d-21c7-4d4a-a8a2-2d455fcd0c6a",
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "b4c9261c-5cfc-45cc-bf9c-f48f272c4efe",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "3d285f30-63b2-4777-b33a-45e6d8b65f00",
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "5c546502-d68d-4202-87d0-566e51c86182",
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "fd444c09-c16b-4931-b4d2-8ea220e793e0",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "7b0ea7b0-9858-413b-a624-433d7e812b1b",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "4b9d3234-c0d7-428d-bb31-267dd55fcbb2",
+    "name": "Daniel Lee",
+    "email": "daniel@web3geeks.com",
+    "approved": true,
+    "project_type": "marketing",
+    "budget": 1800.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "efa60a42-1be8-4e71-bb41-6bac34f50fc1",
+    "name": "Maya Patel",
+    "email": "maya@web3geeks.com",
+    "approved": true,
+    "project_type": "research",
+    "budget": 1200.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "3bd0c400-08c2-4c0a-8000-6a1dbceb1e19",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  },
+  {
+    "proposal_id": "e10d4c63-8499-464e-a903-268dbd8c1de9",
+    "name": "Alice Johnson",
+    "email": "alice@web3geeks.com",
+    "approved": true,
+    "project_type": "website",
+    "budget": 2400.0,
+    "status": "approved"
+  }
+]
