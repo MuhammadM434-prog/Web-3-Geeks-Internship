@@ -1,0 +1,27 @@
+feature_name,description,computation_window,source_columns,feature_version
+win_rate_last_3,Team win rate over previous 3 matches,Previous 3 matches,result,v1.0
+win_rate_last_5,Team win rate over previous 5 matches,Previous 5 matches,result,v1.0
+win_rate_last_10,Team win rate over previous 10 matches,Previous 10 matches,result,v1.0
+avg_score_for_last_3,Average team score in previous 3 matches,Previous 3 matches,team_score,v1.0
+avg_score_for_last_5,Average team score in previous 5 matches,Previous 5 matches,team_score,v1.0
+avg_score_for_last_10,Average team score in previous 10 matches,Previous 10 matches,team_score,v1.0
+avg_score_against_last_3,Average opponent score in previous 3 matches,Previous 3 matches,opponent_score,v1.0
+avg_score_against_last_5,Average opponent score in previous 5 matches,Previous 5 matches,opponent_score,v1.0
+avg_score_against_last_10,Average opponent score in previous 10 matches,Previous 10 matches,opponent_score,v1.0
+win_streak_before_match,Number of consecutive wins before current match,All previous matches,result,v1.0
+days_rest,Days since team's previous match,Previous match,match_date,v1.0
+h2h_win_rate_before,Team win rate in previous meetings against opponent,All previous H2H meetings,"team_name, opponent, result",v1.0
+h2h_avg_margin_before,Average team margin in previous H2H meetings,All previous H2H meetings,"team_score, opponent_score",v1.0
+prior_points,Cumulative ladder points before current match,Season to date,result,v1.0
+ladder_position_before,Approximate ladder position based on prior points,Season/date snapshot,"year, match_date, result",v1.0
+home_away,Whether team is playing at home or away,Current match,home_away,v1.0
+venue,Venue of current match,Current match,venue,v1.0
+avg_goals_last_3,Player average goals over previous 3 games,Previous 3 player games,goals,v1.0
+avg_disposals_last_3,Player average disposals over previous 3 games,Previous 3 player games,disposals,v1.0
+avg_fantasy_points_last_3,Player average fantasy points over previous 3 games,Previous 3 player games,fantasy_points,v1.0
+avg_goals_last_5,Player average goals over previous 5 games,Previous 5 player games,goals,v1.0
+avg_disposals_last_5,Player average disposals over previous 5 games,Previous 5 player games,disposals,v1.0
+avg_fantasy_points_last_5,Player average fantasy points over previous 5 games,Previous 5 player games,fantasy_points,v1.0
+avg_goals_last_10,Player average goals over previous 10 games,Previous 10 player games,goals,v1.0
+avg_disposals_last_10,Player average disposals over previous 10 games,Previous 10 player games,disposals,v1.0
+avg_fantasy_points_last_10,Player average fantasy points over previous 10 games,Previous 10 player games,fantasy_points,v1.0
