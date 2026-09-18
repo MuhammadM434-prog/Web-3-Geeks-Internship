@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+pandas
+numpy
+joblib
+langgraph
+scikit-learn==1.8.0
