@@ -1,0 +1,170 @@
+{
+  "name": "Voice Agent - Error Handler (Dead Letter + Human Escalation)",
+  "nodes": [
+    {
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "set-dead-letter-record",
+      "name": "Build Dead-Letter Record",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "call_id",
+              "type": "string",
+              "value": "={{ $json.execution.data.resultData.runData[Object.keys($json.execution.data.resultData.runData)[0]][0].data.main[0][0].json.call_id || 'unknown' }}"
+            },
+            {
+              "id": "a2",
+              "name": "failed_node",
+              "type": "string",
+              "value": "={{ $json.execution.lastNodeExecuted }}"
+            },
+            {
+              "id": "a3",
+              "name": "error_message",
+              "type": "string",
+              "value": "={{ $json.execution.data.resultData.error.message }}"
+            },
+            {
+              "id": "a4",
+              "name": "workflow_name",
+              "type": "string",
+              "value": "={{ $json.workflow.name }}"
+            },
+            {
+              "id": "a5",
+              "name": "failed_at",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "postgres-dead-letter",
+      "name": "Postgres - Dead Letter Queue",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -320,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO dead_letter_queue (call_id, failed_node, error_message, workflow_name, failed_at, status)\nVALUES ($1, $2, $3, $4, $5, 'pending_review');",
+        "options": {
+          "queryReplacement": "={{ [$json.call_id, $json.failed_node, $json.error_message, $json.workflow_name, $json.failed_at] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "POSTGRES_CRED_ID",
+          "name": "CRM Postgres"
+        }
+      }
+    },
+    {
+      "id": "slack-notify-human",
+      "name": "Slack - Notify On-Call Agent",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        380
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#voice-agent-escalations"
+        },
+        "text": "=\u26a0\ufe0f Voice agent workflow failed.\nCall: {{ $json.call_id }}\nFailed node: {{ $json.failed_node }}\nError: {{ $json.error_message }}\nPlease follow up with the caller manually.",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "SLACK_CRED_ID",
+          "name": "Slack - Ops Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Dead-Letter Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Dead-Letter Record": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Dead Letter Queue",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack - Notify On-Call Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "versionId": "00000000-0000-0000-0000-000000000002",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "voice-agent"
+    },
+    {
+      "name": "error-handling"
+    },
+    {
+      "name": "capstone-week4-day4"
+    }
+  ]
+}
