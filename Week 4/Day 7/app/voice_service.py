@@ -59,7 +59,7 @@ class DeepgramSTT:
 
 
 class FishAudioTTS:
-    def __init__(self, api_key: str, model: str = "s1", reference_id: str = ""):
+    def __init__(self, api_key: str, model: str = "s2.1-pro-free", reference_id: str = ""):
         self.api_key = api_key
         self.model = model
         self.reference_id = reference_id
@@ -70,13 +70,17 @@ class FishAudioTTS:
     def synthesize(self, text: str) -> bytes:
         if not self.api_key:
             raise SpeechProviderError("Fish Audio API key is not configured")
-        payload = {"text": text, "format": "mp3", "model": self.model}
+        payload = {"text": text, "format": "mp3"}
         if self.reference_id:
             payload["reference_id"] = self.reference_id
         try:
             response = httpx.post(
                 "https://api.fish.audio/v1/tts",
-                headers={"Authorization": f"Bearer {self.api_key}"},
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                    "model": self.model,
+                },
                 json=payload,
                 timeout=30.0,
             )

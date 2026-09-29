@@ -21,8 +21,9 @@ Two turn modes are supported by the same compiled graph:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from langgraph.graph import END, StateGraph
 
@@ -42,6 +43,7 @@ AREA_KEYWORDS = {"dha": "DHA Phase 6", "gulberg": "Gulberg III", "bahria": "Bahr
 CRORE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*crore", re.IGNORECASE)
 BEDROOM_RE = re.compile(r"(\d+)\s*(?:bed|bedroom)", re.IGNORECASE)
 TIME_RE = re.compile(r"(\d{1,2})\s*(am|pm)", re.IGNORECASE)
+PAKISTAN_TIMEZONE = ZoneInfo("Asia/Karachi")
 INTENT_CLASSIFIER = build_intent_classifier()
 INJECTION_TERMS = (
     "ignore instructions", "reveal your prompt", "show me your system prompt",
@@ -58,6 +60,15 @@ def _log(state: VoiceAgentState, node: str, note: str) -> dict:
 
 def _say(text: str) -> dict:
     return {"conversation_history": [{"role": "agent", "content": text}]}
+
+
+def normalize_voice_transcript(text: str) -> str:
+    if INTENT_CLASSIFIER is None:
+        return text
+    try:
+        return INTENT_CLASSIFIER.normalize_transcript(text) or text
+    except Exception:
+        return text
 
 
 # --- Nodes -------------------------------------------------------------
@@ -210,7 +221,7 @@ def _resolve_start_time(text: str) -> str | None:
         hour = 15 if any(word in text.casefold() for word in ("afternoon", "dopahar")) else 10
     else:
         return None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(PAKISTAN_TIMEZONE)
     day = now + timedelta(days=1) if any(word in text.casefold() for word in ("tomorrow", "kal")) else now
     return day.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat()
 
@@ -351,6 +362,13 @@ def goodbye_node(state: VoiceAgentState) -> dict:
     return {**_say("Shukriya, Allah Hafiz!"), **_log(state, "goodbye", "Call ended.")}
 
 
+def clarification_node(state: VoiceAgentState) -> dict:
+    return {
+        **_say("Maazrat, main aapki baat samajh nahi saka. Kya aap apni baat dobara keh sakte hain?"),
+        **_log(state, "clarification", "Asked caller to repeat an unclear turn."),
+    }
+
+
 def wait_node(state: VoiceAgentState) -> dict:
     """Live-mode terminal node: nothing new to process this turn."""
     return {**_log(state, "wait_for_caller", "Awaiting next caller utterance.")}
@@ -375,7 +393,7 @@ def route_after_intent(state: VoiceAgentState) -> str:
         "rescheduling": "rescheduling",
         "cancellation": "cancellation",
         "wait_for_caller": "wait",
-        "unclear": "intent_detection" if state["turn_mode"] == "batch" else "wait",
+        "unclear": "clarification",
     }.get(state["intent"], "wait")
 
 
@@ -405,6 +423,7 @@ def build_graph():
     graph.add_node("cancellation", cancellation_node)
     graph.add_node("email", email_node)
     graph.add_node("goodbye", goodbye_node)
+    graph.add_node("clarification", clarification_node)
     graph.add_node("wait", wait_node)
 
     graph.set_conditional_entry_point(route_entry, {
@@ -414,7 +433,7 @@ def build_graph():
     graph.add_conditional_edges("intent_detection", route_after_intent, {
         "goodbye": "goodbye", "rag": "rag", "objection": "objection", "recommendation": "recommendation",
         "booking": "booking", "rescheduling": "rescheduling", "cancellation": "cancellation",
-        "intent_detection": "intent_detection", "wait": "wait",
+        "intent_detection": "intent_detection", "clarification": "clarification", "wait": "wait",
     })
     graph.add_conditional_edges("rag", route_after_info, {"intent_detection": "intent_detection", END: END})
     graph.add_conditional_edges("objection", route_after_info, {"intent_detection": "intent_detection", END: END})
@@ -424,6 +443,7 @@ def build_graph():
     graph.add_conditional_edges("cancellation", route_after_action, {"email": "email", "intent_detection": "intent_detection", END: END})
     graph.add_conditional_edges("email", route_after_email, {"intent_detection": "intent_detection", END: END})
     graph.add_edge("goodbye", END)
+    graph.add_conditional_edges("clarification", route_after_info, {"intent_detection": "intent_detection", END: END})
     graph.add_edge("wait", END)
     return graph.compile()
 

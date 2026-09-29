@@ -82,15 +82,10 @@ class EmailService:
         return build("gmail", "v1", credentials=credentials, cache_discovery=False)
 
     def health(self) -> bool:
+        """Check storage and provider configuration without Gmail read access."""
         if not self.db.health():
             return False
-        if self._gmail is None:
-            return True
-        try:
-            self._gmail.users().getProfile(userId=GMAIL_SENDER).execute()
-            return True
-        except Exception:
-            return False
+        return EMAIL_PROVIDER.casefold() != "gmail" or self._gmail is not None
 
     def _send_gmail(self, to_address: str, subject: str, body: str) -> str:
         raw = (

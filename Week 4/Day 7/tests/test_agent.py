@@ -48,7 +48,8 @@ def test_full_booking_conversation_with_conflict_and_retry():
     # booking (see conftest-equivalent seeding below in test_sold_property...
     # actually seeded inline here for isolation):
     from datetime import datetime, timedelta, timezone
-    now = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Asia/Karachi"))
     three_pm = now.replace(hour=15, minute=0, second=0, microsecond=0)
     DB.save_appointment({
         "appointment_id": "APPT-PRESEED", "calendar_event_id": "EVT-PRESEED",
@@ -128,6 +129,18 @@ def test_metrics_endpoint_reflects_real_traffic():
     assert metrics["summary"]["events"] > 0
 
 
+def test_gmail_readiness_does_not_require_profile_scope(monkeypatch):
+    from app.email_service import EmailService
+
+    database = DatabaseAdapter("sqlite:///:memory:")
+    email_service = EmailService(database)
+    email_service._gmail = object()
+    monkeypatch.setattr("app.email_service.EMAIL_PROVIDER", "gmail")
+
+    assert email_service.health() is True
+    database.close()
+
+
 def test_in_memory_database_persists_between_operations():
     memory_db = DatabaseAdapter("sqlite:///:memory:")
     memory_db.upsert_client_preferences("+92-300-0000000", "Memory User", "Lahore", None, 40_000_000, None)
@@ -174,6 +187,42 @@ def test_relative_date_and_objection_are_supported():
     assert second["responses"]
 
 
+def test_booking_time_is_interpreted_in_pakistan_timezone():
+    from datetime import datetime, timedelta
+    from app.graph import _resolve_start_time
+
+    start_time = datetime.fromisoformat(_resolve_start_time("4pm par visit book kar dain"))
+
+    assert start_time.hour == 16
+    assert start_time.utcoffset() == timedelta(hours=5)
+
+
+def test_fish_audio_tts_default_uses_day3_free_model():
+    from app.voice_service import FishAudioTTS
+
+    assert FishAudioTTS(api_key="test-key").model == "s2.1-pro-free"
+
+
+def test_fish_audio_tts_sends_model_in_header_like_day3(monkeypatch):
+    import httpx
+    from app import voice_service
+    from app.voice_service import FishAudioTTS
+
+    captured = {}
+
+    def fake_post(url, headers, json, timeout):
+        captured.update(url=url, headers=headers, json=json, timeout=timeout)
+        request = httpx.Request("POST", url)
+        return httpx.Response(200, content=b"mp3-fixture", request=request)
+
+    monkeypatch.setattr(voice_service.httpx, "post", fake_post)
+    audio = FishAudioTTS(api_key="test-key").synthesize("Assalam-o-alaikum")
+
+    assert audio == b"mp3-fixture"
+    assert captured["headers"]["model"] == "s2.1-pro-free"
+    assert captured["json"] == {"text": "Assalam-o-alaikum", "format": "mp3"}
+
+
 def test_voice_turn_connects_audio_to_transcript_graph_and_audio_response(monkeypatch):
     from app import main as main_module
 
@@ -184,7 +233,7 @@ def test_voice_turn_connects_audio_to_transcript_graph_and_audio_response(monkey
         def transcribe(self, audio, mime_type):
             assert audio == b"wav-fixture"
             assert mime_type == "audio/wav"
-            return "Budget 4 crore hai, Bahria Town mein ghar chahiye"
+            return "मुझे बहरिया टाउन में एक अच्छा घर चाहिए"
 
     class StubTTS:
         def health(self):
@@ -196,6 +245,11 @@ def test_voice_turn_connects_audio_to_transcript_graph_and_audio_response(monkey
 
     monkeypatch.setattr(main_module, "STT", StubSTT())
     monkeypatch.setattr(main_module, "TTS", StubTTS())
+    monkeypatch.setattr(
+        main_module,
+        "normalize_voice_transcript",
+        lambda text: "Mujhe Bahria Town mein ek acha ghar chahiye",
+    )
     response = client.post("/voice/turn", json={
         "call_id": "CALL-TEST-VOICE-ENDPOINT",
         "audio_base64": base64.b64encode(b"wav-fixture").decode("ascii"),
@@ -205,9 +259,119 @@ def test_voice_turn_connects_audio_to_transcript_graph_and_audio_response(monkey
     })
     assert response.status_code == 200, response.text
     payload = response.json()
-    assert payload["transcript"] == "Budget 4 crore hai, Bahria Town mein ghar chahiye"
+    assert payload["transcript"] == "Mujhe Bahria Town mein ek acha ghar chahiye"
     assert base64.b64decode(payload["audio_base64"]) == b"mp3-fixture"
 
+
+def test_voice_turn_identifies_speech_recognition_failure_without_leaking_provider_error(monkeypatch):
+    from app import main as main_module
+    from app.voice_service import SpeechProviderError
+
+    class FailedSTT:
+        def transcribe(self, audio, mime_type):
+            raise SpeechProviderError("provider detail must stay private")
+
+    monkeypatch.setattr(main_module, "STT", FailedSTT())
+    response = client.post("/voice/turn", json={
+        "call_id": "CALL-TEST-VOICE-STT-FAILURE",
+        "audio_base64": base64.b64encode(b"wav-fixture").decode("ascii"),
+        "mime_type": "audio/wav",
+    })
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Voice processing failed during speech recognition"
+    assert "provider detail" not in response.text
+
+
+def test_voice_turn_logs_sanitized_provider_reason_but_keeps_public_error_generic(monkeypatch, caplog):
+    import httpx
+    from app import main as main_module
+    from app.voice_service import SpeechProviderError
+
+    class StubSTT:
+        def transcribe(self, audio, mime_type):
+            return "Assalam-o-alaikum"
+
+    class FailedTTS:
+        def synthesize(self, text):
+            request = httpx.Request("POST", "https://api.fish.audio/v1/tts")
+            response = httpx.Response(
+                402,
+                json={"code": "payment_required", "message": "account quota exhausted"},
+                request=request,
+            )
+            upstream_error = httpx.HTTPStatusError(
+                "402 Payment Required", request=request, response=response,
+            )
+            raise SpeechProviderError("Speech provider could not synthesize the response") from upstream_error
+
+    monkeypatch.setattr(main_module, "STT", StubSTT())
+    monkeypatch.setattr(main_module, "TTS", FailedTTS())
+    response = client.post("/voice/turn", json={
+        "call_id": "CALL-TEST-VOICE-TTS-402",
+        "audio_base64": base64.b64encode(b"wav-fixture").decode("ascii"),
+        "mime_type": "audio/wav",
+    })
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Voice processing failed during speech synthesis"
+    assert "payment_required" in caplog.text
+    assert "account quota exhausted" in caplog.text
+    assert "payment_required" not in response.text
+    assert "account quota exhausted" not in response.text
+
+
+def test_live_unclear_intent_routes_to_clarification_reply():
+    from app.graph import clarification_node, route_after_intent
+    from app.state import initial_state
+
+    state = initial_state("CALL-TEST-UNCLEAR", "Caller", "+1")
+    state["intent"] = "unclear"
+
+    assert route_after_intent(state) == "clarification"
+    result = clarification_node(state)
+    assert result["conversation_history"][0]["role"] == "agent"
+    assert result["conversation_history"][0]["content"]
+
+def test_transcript_normalizer_uses_configured_provider_and_preserves_roman_text():
+    from app.llm_service import FallbackIntentClassifier
+
+    class StubNormalizer:
+        def normalize_transcript(self, text):
+            return "Mujhe Bahria Town mein ek acha ghar chahiye"
+
+    normalizer = FallbackIntentClassifier(StubNormalizer(), None)
+    devanagari_text = "मुझे बहरिया टाउन में एक अच्छा घर चाहिए"
+
+    assert normalizer.normalize_transcript(devanagari_text) == "Mujhe Bahria Town mein ek acha ghar chahiye"
+    assert normalizer.normalize_transcript("Mujhe Bahria Town mein ghar chahiye") == "Mujhe Bahria Town mein ghar chahiye"
+
+def test_transcript_normalizer_logs_provider_failure_and_uses_fallback(caplog):
+    from app.llm_service import FallbackIntentClassifier
+
+    class FailingNormalizer:
+        def normalize_transcript(self, text):
+            raise RuntimeError("provider failed")
+
+    class WorkingNormalizer:
+        def normalize_transcript(self, text):
+            return "Mujhe Bahria Town mein ghar chahiye"
+
+    normalizer = FallbackIntentClassifier(FailingNormalizer(), WorkingNormalizer())
+    transcript = "मुझे बहरिया टाउन में एक अच्छा घर चाहिए"
+
+    assert normalizer.normalize_transcript(transcript) == "Mujhe Bahria Town mein ghar chahiye"
+    assert "Transcript normalization failed for FailingNormalizer (RuntimeError, status=None)" in caplog.text
+    assert transcript not in caplog.text
+
+def test_build_intent_classifier_warns_when_no_provider_is_configured(caplog, monkeypatch):
+    import app.llm_service as llm_service
+
+    monkeypatch.setattr(llm_service, "LLM_PROVIDER", "local-adapter")
+    monkeypatch.setattr(llm_service, "LLM_FALLBACK_PROVIDER", "local-adapter")
+
+    assert llm_service.build_intent_classifier() is None
+    assert "No LLM provider configured" in caplog.text
 
 def test_llm_fallback_uses_groq_when_primary_provider_fails():
     from app.llm_service import FallbackIntentClassifier

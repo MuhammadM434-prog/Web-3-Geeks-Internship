@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import time
 import base64
+import logging
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from threading import RLock
@@ -31,11 +32,13 @@ from app.config import (
     ALLOWED_ORIGINS,
     API_AUTH_TOKEN,
     APP_ENV,
+    DEEPGRAM_API_KEY,
+    FISH_AUDIO_API_KEY,
     MAX_AUDIO_BYTES,
     RATE_LIMIT_PER_MINUTE,
     REQUIRE_LIVE_PROVIDERS_IN_PRODUCTION,
 )
-from app.graph import COMPILED_GRAPH
+from app.graph import COMPILED_GRAPH, normalize_voice_transcript
 from app.monitoring import MonitoringService
 from app.state import VoiceAgentState, initial_state
 from app.tools import CALENDAR, DB, EMAIL, VECTOR_DB
@@ -45,6 +48,7 @@ MONITORING = MonitoringService(DB)
 SESSION_LOCKS: defaultdict[str, RLock] = defaultdict(RLock)
 STT = build_stt()
 TTS = build_tts()
+VOICE_LOGGER = logging.getLogger("realestate.voice")
 
 app = FastAPI(title="Real Estate Voice Agent", version="1.0.0")
 if ALLOWED_ORIGINS:
@@ -220,14 +224,18 @@ def reset_call(call_id: str) -> dict[str, str]:
 
 @app.post("/voice/turn", response_model=VoiceTurnResponse)
 def voice_turn(request: VoiceTurnRequest) -> VoiceTurnResponse:
+    stage = "audio decoding"
     try:
         audio = base64.b64decode(request.audio_base64, validate=True)
         if not audio or len(audio) > MAX_AUDIO_BYTES:
             raise ValueError("Audio payload is empty or too large")
+        stage = "speech recognition"
         transcribe = getattr(STT, "transcribe")
         transcript = transcribe(audio, request.mime_type)
         if not transcript.strip():
             raise SpeechProviderError("Speech provider returned an empty transcript")
+        transcript = normalize_voice_transcript(transcript)
+        stage = "conversation processing"
         result = agent_turn(TurnRequest(
             call_id=request.call_id,
             text=transcript,
@@ -235,10 +243,57 @@ def voice_turn(request: VoiceTurnRequest) -> VoiceTurnResponse:
             client_phone=request.client_phone,
         ))
         response_text = " ".join(result.responses)
+        stage = "speech synthesis"
         synthesize = getattr(TTS, "synthesize")
         audio_output = synthesize(response_text)
     except (ValueError, TypeError, SpeechProviderError, AttributeError) as error:
-        raise HTTPException(status_code=503, detail="Voice providers are unavailable") from error
+        cause = error.__cause__ or error
+        upstream_response = getattr(cause, "response", None)
+        upstream_status = getattr(upstream_response, "status_code", None)
+        upstream_code = None
+        upstream_reason = None
+        if upstream_response is not None:
+            try:
+                payload = upstream_response.json()
+            except ValueError:
+                payload = {}
+            if isinstance(payload, dict):
+                provider_error = payload.get("error")
+                if isinstance(provider_error, dict):
+                    upstream_code = provider_error.get("code")
+                    upstream_reason = provider_error.get("message")
+                elif isinstance(provider_error, str):
+                    upstream_reason = provider_error
+                upstream_code = (
+                    payload.get("code")
+                    or payload.get("error_code")
+                    or upstream_code
+                )
+                upstream_reason = (
+                    payload.get("message")
+                    or payload.get("detail")
+                    or upstream_reason
+                )
+        for field_name in ("upstream_code", "upstream_reason"):
+            field_value = locals()[field_name]
+            if not isinstance(field_value, str):
+                continue
+            field_value = " ".join(field_value.split())[:200]
+            for secret in (API_AUTH_TOKEN, DEEPGRAM_API_KEY, FISH_AUDIO_API_KEY):
+                if secret:
+                    field_value = field_value.replace(secret, "[redacted]")
+            if field_name == "upstream_code":
+                upstream_code = field_value
+            else:
+                upstream_reason = field_value
+        VOICE_LOGGER.error(
+            "Voice turn failed during %s (%s, upstream_status=%s, upstream_code=%s, upstream_reason=%s)",
+            stage, type(cause).__name__, upstream_status, upstream_code, upstream_reason,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=f"Voice processing failed during {stage}",
+        ) from error
     return VoiceTurnResponse(
         call_id=request.call_id,
         transcript=transcript,
