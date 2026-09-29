@@ -13,7 +13,7 @@ The capstone deployment is organized around:
 -   Voice-service layer
 -   LangGraph orchestration
 -   Retrieval / vector database layer
--   SQLite-backed operational database
+-   SQLite local/test database or pooled PostgreSQL production database
 -   Calendar integration
 -   Employee email notification
 -   Monitoring and metrics
@@ -50,7 +50,7 @@ LangGraph conversation workflow
    v
 Response to customer
 
-Operational data <----> SQLite / DB tools
+Operational data <----> SQLite/PostgreSQL / DB tools
 Property knowledge <----> Vector retrieval layer
 Observability <----> Metrics / logs
 ```

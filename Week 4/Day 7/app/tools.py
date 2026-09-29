@@ -1,9 +1,8 @@
 """
 Six tools, wrapped with LangChain's ``@tool`` decorator so they carry a schema
-and can be bound to an LLM's native tool-calling. Each one calls a genuinely
-functional local service (SQLite-backed calendar/email/CRM, TF-IDF RAG,
-filter+score recommendation engine) -- there is no fallback branch here that
-returns a canned string.
+and can be bound to an LLM's native tool-calling. They call the configured
+relational database for calendar/email/CRM, the TF-IDF RAG adapter, and the
+filter+score recommendation engine; no fallback returns a canned success.
 """
 from __future__ import annotations
 

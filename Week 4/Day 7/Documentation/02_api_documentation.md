@@ -61,6 +61,48 @@ by the Day 7 validation flow:
 -   Prompt-injection resistance
 -   Operational metrics / health monitoring
 
+## 4.1 Exact endpoints
+
+| Method | Path | Purpose | Success response |
+|---|---|---|---|
+| `GET` | `/health` | Liveness check. | Service status and environment. |
+| `GET` | `/ready` | Dependency readiness check. | Per-provider checks and aggregate status. |
+| `GET` | `/metrics` | Monitoring summary and alerts. | Event count, latency, failures, success rate, alerts. |
+| `POST` | `/agent/turn` | Process one already-transcribed conversation turn. | Responses, intent, appointment status, latency. |
+| `POST` | `/voice/turn` | Decode audio, call STT, process the graph, and synthesize TTS. | Transcript, UrduLish response, base64 MP3 audio. |
+| `POST` | `/agent/reset/{call_id}` | Delete durable conversation state for a call. | Reset status and call ID. |
+
+When `API_AUTH_TOKEN` is configured, all endpoints except `/health` and
+`/ready` require either `X-API-Key: <token>` or `Authorization: Bearer <token>`.
+POST requests are rate-limited by client address using `RATE_LIMIT_PER_MINUTE`.
+
+### `/agent/turn` request
+
+```json
+{
+  "call_id": "CALL-1",
+  "text": "Budget 4 crore hai, Bahria Town mein ghar chahiye",
+  "client_name": "Bilal Farooq",
+  "client_phone": "+92-321-5551042"
+}
+```
+
+### `/voice/turn` request
+
+```json
+{
+  "call_id": "CALL-1",
+  "audio_base64": "<base64 encoded WAV>",
+  "mime_type": "audio/wav",
+  "client_name": "Bilal Farooq",
+  "client_phone": "+92-321-5551042"
+}
+```
+
+Audio is rejected when empty or larger than `MAX_AUDIO_BYTES`. Provider
+failures return a safe `503` response; internal credentials, stack traces, and
+provider payloads are not returned to callers.
+
 ## 5. Error behavior
 
 Public errors should be actionable but must not expose:

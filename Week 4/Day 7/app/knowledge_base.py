@@ -23,9 +23,11 @@ from app.config import VECTOR_DATABASE_URL
 # --- Structured operational data (authoritative; never approximated) -------
 
 EMPLOYEES: dict[str, dict[str, str]] = {
-    "AGENT-001": {"name": "Ayesha Khan", "email": "ayesha.khan@realestatehub.example"},
-    "AGENT-002": {"name": "Hamza Malik", "email": "hamza.malik@realestatehub.example"},
-    "AGENT-003": {"name": "Sana Ahmed", "email": "sana.ahmed@realestatehub.example"},
+    "AGENT-001": {"name": "Ayesha Khan", "email": "muhammadnaveed121494@gmail.com"},
+    "AGENT-002": {"name": "Hamza Malik", "email": "mohd121494@gmail.com"},
+    # AGENT-003 currently shares the first project mailbox until a third
+    # employee address is supplied.
+    "AGENT-003": {"name": "Sana Ahmed", "email": "muhammadnaveed121494@gmail.com"},
 }
 
 PROPERTIES: list[dict[str, Any]] = [

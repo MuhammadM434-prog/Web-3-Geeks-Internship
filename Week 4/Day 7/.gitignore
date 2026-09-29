@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+client_secret*.json
+google-service-account*.json
+service-account*.json
+credentials*.json
+/backups/

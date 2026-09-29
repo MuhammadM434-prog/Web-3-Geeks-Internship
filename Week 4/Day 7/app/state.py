@@ -44,6 +44,8 @@ class VoiceAgentState(TypedDict):
     pending_clarification: Optional[str]
 
     matched_property_id: Optional[str]
+    shortlisted_property_ids: list[str]
+    rejected_property_ids: list[str]
     appointment_id: Optional[str]
     selected_slot: Optional[dict]
     appointment_status: str  # "none" | "booked" | "rescheduled" | "cancelled"
@@ -70,6 +72,8 @@ def initial_state(call_id: str, client_name: str, client_phone: str,
         intent=None,
         pending_clarification=None,
         matched_property_id=None,
+        shortlisted_property_ids=[],
+        rejected_property_ids=[],
         appointment_id=None,
         selected_slot=None,
         appointment_status="none",

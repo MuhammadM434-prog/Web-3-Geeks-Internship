@@ -33,7 +33,7 @@ class MonitoringService:
         if summary.get("events", 0) == 0:
             return []
         triggered = []
-        if summary.get("max_latency_ms", 0) > ALERT_THRESHOLDS["p95_latency_ms"]:
+        if summary.get("p95_latency_ms", 0) > ALERT_THRESHOLDS["p95_latency_ms"]:
             triggered.append("HIGH_LATENCY")
         if summary.get("success_rate", 1.0) < ALERT_THRESHOLDS["minimum_success_rate"]:
             triggered.append("LOW_SUCCESS_RATE")

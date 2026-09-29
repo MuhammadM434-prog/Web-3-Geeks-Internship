@@ -9,6 +9,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+COPY migrations ./migrations
+COPY scripts ./scripts
 
 # SQLite data directory (mount a volume here in production, or point
 # DATABASE_URL at Postgres and skip the volume entirely).

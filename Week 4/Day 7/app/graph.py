@@ -21,11 +21,13 @@ Two turn modes are supported by the same compiled graph:
 from __future__ import annotations
 
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from langgraph.graph import END, StateGraph
 
 from app.knowledge_base import property_lookup
+from app.llm_service import build_intent_classifier
 from app.state import VoiceAgentState
 from app.tools import (
     availability_checker_tool,
@@ -40,6 +42,11 @@ AREA_KEYWORDS = {"dha": "DHA Phase 6", "gulberg": "Gulberg III", "bahria": "Bahr
 CRORE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*crore", re.IGNORECASE)
 BEDROOM_RE = re.compile(r"(\d+)\s*(?:bed|bedroom)", re.IGNORECASE)
 TIME_RE = re.compile(r"(\d{1,2})\s*(am|pm)", re.IGNORECASE)
+INTENT_CLASSIFIER = build_intent_classifier()
+INJECTION_TERMS = (
+    "ignore instructions", "reveal your prompt", "show me your system prompt",
+    "api key", "private company data", "fake appointment", "override the policy",
+)
 
 
 def _log(state: VoiceAgentState, node: str, note: str) -> dict:
@@ -85,9 +92,19 @@ def intent_detection_node(state: VoiceAgentState) -> dict:
         if keyword in text:
             preferences["area"] = area_name
             preferences["city"] = "Lahore"
+    if any(word in text for word in ("rent", "rental", "kiraye")):
+        preferences["purpose"] = "rental"
+    elif any(word in text for word in ("commercial", "office", "shop", "business")):
+        preferences["purpose"] = "commercial"
+    elif any(word in text for word in ("investment", "invest")):
+        preferences["purpose"] = "investment"
+    elif any(word in text for word in ("buy", "sale", "kharid")):
+        preferences["purpose"] = "buyer"
     update["property_preferences"] = preferences
 
-    if any(w in text for w in ("shukriya", "thanks", "thank you", "bye", "khuda hafiz")):
+    if any(term in text for term in INJECTION_TERMS):
+        intent = "rag_query"
+    elif any(w in text for w in ("shukriya", "thanks", "thank you", "bye", "khuda hafiz")):
         intent = "goodbye"
     elif any(w in text for w in ("reschedule", "change kar", "move kar")):
         intent = "rescheduling"
@@ -97,10 +114,22 @@ def intent_detection_node(state: VoiceAgentState) -> dict:
         intent = "booking"
     elif any(w in text for w in ("guarantee", "return", "document", "cnic", "schedule kaise", "policy")):
         intent = "rag_query"
+    elif any(w in text for w in ("expensive", "mehnga", "trust", "sure nahi", "not sure", "maintenance", "builder")):
+        intent = "objection"
     elif any(w in text for w in ("option", "dikhao", "chahiye", "ghar", "property", "recommend")):
         intent = "recommendation_request"
     else:
         intent = "unclear"
+
+    # Provider-backed classification is optional. The local classifier remains
+    # the deterministic fallback for offline tests and missing credentials.
+    if INTENT_CLASSIFIER is not None and not any(term in text for term in INJECTION_TERMS):
+        try:
+            provider_intent = INTENT_CLASSIFIER.classify(utterance, state)
+            if provider_intent:
+                intent = provider_intent
+        except Exception:
+            pass
 
     update["intent"] = intent
     return {**update, **_log(state, "intent_detection", f"Parsed intent={intent}")}
@@ -118,6 +147,17 @@ def rag_node(state: VoiceAgentState) -> dict:
         "tool_outputs": [{"tool": "rag_search", "input": {"query": last_utterance}, "output": result}],
         **_log(state, "rag", f"evidence_id={result['evidence_id']}"),
     }
+
+
+def objection_node(state: VoiceAgentState) -> dict:
+    text = state["conversation_history"][-1]["content"].casefold()
+    if any(word in text for word in ("expensive", "mehnga")):
+        reply = "Ji, budget important hai. Main aapko lower-budget verified options bhi dikha sakta hoon."
+    elif any(word in text for word in ("trust", "sure nahi", "not sure")):
+        reply = "Bilkul, pehle property details aur verified viewing process review kar lete hain; aap kis concern par focus karna chahenge?"
+    else:
+        reply = "Ji, aapka concern samajh raha hoon. Thora detail batayein taake main verified information ke saath help kar sakoon."
+    return {**_say(reply), **_log(state, "objection", "Acknowledged caller concern.")}
 
 
 def recommendation_node(state: VoiceAgentState) -> dict:
@@ -150,6 +190,11 @@ def recommendation_node(state: VoiceAgentState) -> dict:
     return {
         **_say(reply),
         "matched_property_id": matched_id,
+        "shortlisted_property_ids": [candidate["property_id"] for candidate in matches[:3]],
+        "rejected_property_ids": [
+            candidate["property_id"] for candidate in matches
+            if candidate["property_id"] != matched_id
+        ],
         "tool_outputs": tool_outputs,
         **_log(state, "recommendation", f"matched={matched_id}"),
     }
@@ -157,14 +202,17 @@ def recommendation_node(state: VoiceAgentState) -> dict:
 
 def _resolve_start_time(text: str) -> str | None:
     match = TIME_RE.search(text)
-    if not match:
+    if match:
+        hour = int(match.group(1))
+        if match.group(2).lower() == "pm" and hour != 12:
+            hour += 12
+    elif "tomorrow" in text.casefold() or "kal" in text.casefold():
+        hour = 15 if any(word in text.casefold() for word in ("afternoon", "dopahar")) else 10
+    else:
         return None
-    hour = int(match.group(1))
-    if match.group(2).lower() == "pm" and hour != 12:
-        hour += 12
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
-    return now.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat()
+    day = now + timedelta(days=1) if any(word in text.casefold() for word in ("tomorrow", "kal")) else now
+    return day.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat()
 
 
 def booking_node(state: VoiceAgentState) -> dict:
@@ -321,6 +369,7 @@ def route_after_intent(state: VoiceAgentState) -> str:
     return {
         "goodbye": "goodbye",
         "rag_query": "rag",
+        "objection": "objection",
         "recommendation_request": "recommendation",
         "booking": "booking",
         "rescheduling": "rescheduling",
@@ -349,6 +398,7 @@ def build_graph():
     graph.add_node("greeting", greeting_node)
     graph.add_node("intent_detection", intent_detection_node)
     graph.add_node("rag", rag_node)
+    graph.add_node("objection", objection_node)
     graph.add_node("recommendation", recommendation_node)
     graph.add_node("booking", booking_node)
     graph.add_node("rescheduling", rescheduling_node)
@@ -362,11 +412,12 @@ def build_graph():
     })
     graph.add_edge("greeting", "intent_detection")
     graph.add_conditional_edges("intent_detection", route_after_intent, {
-        "goodbye": "goodbye", "rag": "rag", "recommendation": "recommendation",
+        "goodbye": "goodbye", "rag": "rag", "objection": "objection", "recommendation": "recommendation",
         "booking": "booking", "rescheduling": "rescheduling", "cancellation": "cancellation",
         "intent_detection": "intent_detection", "wait": "wait",
     })
     graph.add_conditional_edges("rag", route_after_info, {"intent_detection": "intent_detection", END: END})
+    graph.add_conditional_edges("objection", route_after_info, {"intent_detection": "intent_detection", END: END})
     graph.add_conditional_edges("recommendation", route_after_info, {"intent_detection": "intent_detection", END: END})
     graph.add_conditional_edges("booking", route_after_action, {"email": "email", "intent_detection": "intent_detection", END: END})
     graph.add_conditional_edges("rescheduling", route_after_action, {"email": "email", "intent_detection": "intent_detection", END: END})
