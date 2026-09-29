@@ -40,21 +40,36 @@ The application setting is `TTS_PROVIDER=fish_audio`. Do not claim Urdu pronunci
 1. Create a Google AI Studio/Gemini project.
 2. Create an API key with the minimum required model permission.
 3. Select the approved model in `GEMINI_MODEL`.
-4. Run the prompt-injection and booking regression suite with the provider enabled.
+4. In the Day 7 notebook, enter the model ID before the application import. The
+	current default is `gemini-3.8-flash`; use the exact model enabled for the
+	account if access differs.
+5. Run the prompt-injection, booking, and transcript-normalization regression
+	suite with the provider enabled.
 
-The local classifier remains available for offline tests. Gemini must not be allowed to authorize a consequential action; server-side availability, confirmation, and idempotency checks remain authoritative.
+The provider is used for intent classification and for transliterating
+non-Roman STT output into Roman Urdu. The normalizer preserves English words,
+names, numbers, and meaning; it does not translate or answer the caller. The
+local classifier remains available for offline tests. Gemini must not be
+allowed to authorize a consequential action; server-side availability,
+confirmation, and idempotency checks remain authoritative.
 
 ## 4.1 Optional Groq fallback
 
 1. Create a Groq account and a restricted API key.
 2. Select an approved tool-capable model in `GROQ_MODEL`.
-3. Set `LLM_FALLBACK_PROVIDER=groq`.
-4. Enter the Groq key through the notebook's hidden runtime prompt or the deployment secret manager.
+3. In the Day 7 notebook, enter the model ID before the application import.
+	The current default is `openai/gpt-oss-120b`; use the exact model enabled
+	for the account if access differs.
+4. Set `LLM_FALLBACK_PROVIDER=groq`.
+5. Enter the Groq key through the notebook's hidden runtime prompt or the deployment secret manager.
 
 The recommended profile is Gemini primary plus Groq fallback. A failed Gemini
 classification request is retried through Groq, then the application falls
-back to its deterministic local classifier. Groq does not bypass server-side
-authorization, calendar availability, booking confirmation, or idempotency.
+back to its deterministic local classifier. Normalization uses the same
+primary/fallback order; if both normalization calls fail or return non-Roman
+text, the original transcript is retained and the failure is logged without
+the transcript or credentials. Groq does not bypass server-side authorization,
+calendar availability, booking confirmation, or idempotency.
 
 ## 5. Google Calendar
 
@@ -249,7 +264,14 @@ The repository provides a microphone client and an HTTP `/voice/turn` contract. 
 8. Reuse the same loop for follow-ups such as budget, area, bedrooms, objections, and appointment requests.
 9. Run the cleanup cell to stop a notebook-started server.
 
-If a provider is unavailable, the notebook must show the failure and stop; it must not fabricate a transcript or audio response.
+If a provider is unavailable, the notebook reports the failing stage and
+returns to its prompt; it must not fabricate a transcript or audio response.
+For normalization-only failures, the service safely retains the original STT
+transcript so the turn can still follow the deterministic graph path.
+If a provider is unavailable, the notebook reports the failing stage and
+returns to its prompt; it must not fabricate a transcript or audio response.
+For normalization-only failures, the service safely retains the original STT
+transcript so the turn can still follow the deterministic graph path.
 
 ## 12. Production release checklist
 

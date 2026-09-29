@@ -17,6 +17,8 @@ The capstone deployment is organized around:
 -   Calendar integration
 -   Employee email notification
 -   Monitoring and metrics
+-   Transcript normalization for Devanagari/Urdu STT output
+-   API authentication, rate limiting, and safe provider errors
 
 The system is designed so that factual property claims come from
 grounded data rather than being invented by the conversational model.
@@ -36,6 +38,7 @@ FastAPI
 LangGraph conversation workflow
    |
    +--> Intent / conversation state
+   +--> Roman Urdu transcript normalization (when STT is non-Roman)
    |
    +--> Property retrieval / RAG
    |
@@ -103,6 +106,26 @@ structured data sources.
   Conversation state             LangGraph/application state
 
 This separation reduces hallucination risk and makes updates auditable.
+
+### Speech and language boundary
+
+`/voice/turn` accepts a turn-based WAV request, sends it to the configured
+Deepgram adapter, normalizes non-Roman output through the configured Gemini
+primary/Groq fallback path, then passes the normalized text to the same
+LangGraph workflow used by `/agent/turn`. Normalization is transliteration,
+not translation: English words, names, numbers, and caller meaning are
+preserved. If the providers fail or return non-Roman output, the original
+transcript is retained and the request continues safely; the failure log
+contains provider type, exception type, and status only.
+
+### Durable session boundary
+
+Each request is keyed by `call_id`. The service loads and saves the complete
+conversation state through the relational adapter, so a later request or
+worker restart can recover budget, preferences, shortlisted properties, and
+appointment context. In-process locks protect concurrent requests for the
+same call within a worker; PostgreSQL transactions and constraints provide
+the production persistence boundary.
 
 ## 5. Core conversation behavior
 

@@ -40,6 +40,27 @@ Check:
 
 Do not solve an abstention failure by instructing the model to guess.
 
+## STT transcript remains in Devanagari
+
+This means the Roman Urdu normalizer did not return an accepted result. Check:
+
+1.  `GEMINI_MODEL` and `GROQ_MODEL` were set before importing `app.main` and
+	`app.graph`.
+2.  The selected model IDs are enabled for the corresponding API accounts.
+3.  The provider response status and model error are visible in sanitized
+	application logs.
+4.  The fallback provider has a valid key and model configuration.
+
+The service intentionally retains the original transcript when both providers
+fail or return non-Roman text. Do not treat the original transcript as proof
+that Deepgram misunderstood the caller, and do not log the transcript while
+debugging provider credentials.
+
+An HTTP `404` from Gemini or Groq usually indicates an unavailable model or an
+incorrect provider/model configuration. Verify the exact model ID in the
+provider account and rerun a harmless normalization utterance before testing
+booking or email behavior.
+
 ## Sold property is recommended
 
 This is a data/eligibility incident.

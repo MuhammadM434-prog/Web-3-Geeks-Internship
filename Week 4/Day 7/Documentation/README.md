@@ -18,7 +18,9 @@
 
 ## Day 7 acceptance flow
 
-The handover is based on the demonstrated integration sequence:
+## Day 7 acceptance flow
+The handover is based on the current service integration sequence and its
+focused regression tests:
 
 -   property inquiry;
 -   budget/area capture;
@@ -31,13 +33,20 @@ The handover is based on the demonstrated integration sequence:
 -   RAG abstention;
 -   prompt-injection resistance;
 -   monitoring/metrics.
+-   non-Roman STT transcript normalization with provider fallback;
+-   durable session recovery after process-local state reset;
+-   safe provider failure handling without secret/transcript logging;
+-   authenticated and rate-limited API boundary checks.
 
 ## Important deployment note
 
 The documentation describes the implemented architecture and the
 validated capstone workflow. Production deployment still requires the
-target environment's real credentials, provider configuration,
-dependency installation, and live integration checks.
+Production deployment still requires the target environment's real
+credentials, provider/model access, provider configuration, dependency
+installation, and live integration checks. The local test suite and notebook
+prove the application behavior and adapter contracts; they do not prove
+third-party delivery, latency, pronunciation quality, or telephony readiness.
 
 The earlier notebook import issue is resolved by importing
 `COMPILED_GRAPH` from `app.graph`, not the local `graph` builder

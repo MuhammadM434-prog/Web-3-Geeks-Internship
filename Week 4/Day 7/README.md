@@ -1,11 +1,11 @@
 # Real Estate Voice Agent — Production Service
 
-This is the actual, integrated system: one FastAPI service that really invokes
-a compiled LangGraph agent, which really calls a SQLite-backed calendar/
-email/CRM layer locally or a pooled PostgreSQL layer in production, alongside
-a real TF-IDF RAG index. It consolidates Days 2, 4, and 5
-of the capstone into one running program instead of separate notebooks that
-each re-simulated the same logic in isolation.
+This is the actual, integrated system: one FastAPI service that invokes a
+compiled LangGraph agent, which calls a SQLite-backed calendar/email/CRM layer
+locally or a pooled PostgreSQL layer in production, alongside a real TF-IDF
+RAG index. It consolidates the earlier capstone work into one running program;
+the earlier notebooks remain educational design, evaluation, and simulation
+artifacts rather than being mistaken for the deployed service.
 
 ## Run it
 
@@ -24,15 +24,22 @@ $env:TTS_PROVIDER = "fish_audio"
 $env:FISH_AUDIO_API_KEY = "your-fish-audio-key"
 $env:LLM_PROVIDER = "gemini"
 $env:GEMINI_API_KEY = "your-gemini-key"
+$env:GEMINI_MODEL = "gemini-3.8-flash"
 $env:LLM_FALLBACK_PROVIDER = "groq"
 $env:GROQ_API_KEY = "your-groq-key"
+$env:GROQ_MODEL = "openai/gpt-oss-120b"
 ```
 
-Gemini is the primary reasoning provider in the recommended profile. If a
-Gemini classification request fails, the configured Groq model is attempted
-before the deterministic local classifier. The fallback never authorizes a
-booking by itself; application-side availability, confirmation, and
-idempotency checks remain authoritative.
+Gemini is the primary reasoning provider in the recommended profile. The
+notebook prompts for both model IDs before importing the application, so an
+account-specific approved model can be selected without editing source code.
+When the speech recognizer returns Devanagari or another non-Roman script,
+the configured Gemini/Groq normalizer attempts Roman Urdu transliteration
+before the turn reaches LangGraph. If both providers fail or return another
+non-Roman result, the original transcript is retained safely. Classification
+also falls back through Groq to the deterministic local classifier. No LLM
+path authorizes a booking by itself; application-side availability,
+confirmation, and idempotency checks remain authoritative.
 
 Then execute the `Live microphone conversation` section in
 `Week4Day7Task1_RealEstateVoiceAgent.ipynb`. It records WAV turns, sends them
@@ -92,8 +99,10 @@ The suite exercises the real stack end-to-end (FastAPI -> LangGraph ->
 configured relational backend), including health/readiness, booking conflict and retry,
 sold-property exclusion, RAG abstention, prompt-injection resistance,
 durable session recovery, appointment lifecycle rules, objection handling,
-and monitoring. Use the test count printed by pytest as the authoritative
-result for the current checkout.
+monitoring, provider error handling, and transcript normalization fallback.
+Use the test count printed by pytest as the authoritative result for the
+current checkout. The external-provider microphone path is a separate staging
+acceptance test and is not replaced by these deterministic tests.
 
 ## Docker
 
@@ -125,6 +134,14 @@ docker run -p 8000:8000 -v $(pwd)/data:/app/data realestate-voice-agent
 - **Multi-turn state**: `main.py` persists real per-`call_id` session state, so
   budget/area/matched-property/appointment context genuinely carries across
   separate HTTP requests — a real phone call, not a stateless one-shot.
+- **Transcript normalization** (`llm_service.py`): non-Roman STT output is
+  sent to the configured LLM normalizer, with provider fallback, rejection of
+  non-Roman responses, safe original-text retention, and sanitized failure
+  logging.
+- **Operational safeguards** (`main.py`, `database.py`): optional API-key or
+  bearer authentication, per-client POST rate limiting, bounded audio input,
+  safe provider errors, dead-letter records, retention, and customer-data
+  erasure are implemented locally.
 
 ## What's honestly still a gap (do not claim otherwise)
 
@@ -141,3 +158,8 @@ docker run -p 8000:8000 -v $(pwd)/data:/app/data realestate-voice-agent
   convention every earlier day in this capstone used to stay runnable
   without an API key. `intent_detection_node` in `graph.py` is the single
   swap point for a real LLM call or native tool-calling.
+- **Live provider acceptance is still environment-specific.** A configured
+  key and green readiness check prove configuration, not Urdu pronunciation,
+  model access, delivery, latency, or production reliability. Run provider
+  smoke tests with controlled, non-booking utterances before any consequential
+  workflow.

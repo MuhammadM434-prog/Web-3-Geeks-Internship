@@ -59,6 +59,7 @@ by the Day 7 validation flow:
 -   Employee notification
 -   Safe refusal / abstention
 -   Prompt-injection resistance
+-   Non-Roman STT transcript normalization with provider fallback
 -   Operational metrics / health monitoring
 
 ## 4.1 Exact endpoints
@@ -102,6 +103,14 @@ POST requests are rate-limited by client address using `RATE_LIMIT_PER_MINUTE`.
 Audio is rejected when empty or larger than `MAX_AUDIO_BYTES`. Provider
 failures return a safe `503` response; internal credentials, stack traces, and
 provider payloads are not returned to callers.
+
+When the STT transcript contains Devanagari or another non-Roman script, the
+service attempts Roman Urdu transliteration before conversation processing.
+The normalizer uses the configured model IDs from `GEMINI_MODEL` and
+`GROQ_MODEL`; those IDs are entered by the notebook setup cell or supplied as
+environment variables before `app.main` is imported. A failed normalizer does
+not fabricate text: the original transcript is retained, and the graph's
+normal clarification or intent behavior applies.
 
 ## 5. Error behavior
 
@@ -158,6 +167,13 @@ assertions include:
 -   unsupported RAG questions produce abstention;
 -   prompt injection does not override the agent's rules;
 -   metrics are produced.
+-   non-Roman transcript normalization uses a provider result when available
+  and retains the original text after provider failure.
+
+The saved notebook also contains a real microphone client with 250 ms audio
+chunks, speech detection, a silence timeout, a 15-second maximum turn, WAV
+upload, and MP3 playback. It is a turn-based HTTP client, not a full-duplex
+telephony implementation.
 
 ## 7. Deployment check
 

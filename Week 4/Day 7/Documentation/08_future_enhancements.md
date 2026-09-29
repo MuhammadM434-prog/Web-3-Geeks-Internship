@@ -30,14 +30,17 @@ Synchronize:
 
 ## 3. Multilingual support
 
-Add:
+The current service already accepts Urdu/Hindustani speech through the STT
+path and attempts Roman Urdu normalization when the recognizer returns
+non-Roman text. The current persona and graph responses are UrduLish-oriented.
+Future language work should add:
 
--   Urdu
--   English
 -   Punjabi
+-   broader Urdu script coverage and native-speaker quality evaluation
+-   language-aware retrieval and evaluation for Urdu, Roman Urdu, and English
 
-The language layer should preserve the same grounding, safety, and
-tool-use rules across languages.
+The language layer must preserve the same grounding, safety, and tool-use
+rules across languages.
 
 ## 4. Brand voice
 

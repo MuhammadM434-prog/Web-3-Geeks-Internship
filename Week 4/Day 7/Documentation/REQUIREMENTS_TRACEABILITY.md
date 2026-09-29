@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-This matrix is the acceptance record for the Week 4 real-estate voice-agent capstone. `COMPLETE` means implemented and verified locally. `PARTIAL` means the local implementation is real but an external provider, live credentials, or production-scale component still requires staging verification. `NOT TESTED` means the code path exists but cannot be verified without the external dependency.
+This matrix is the acceptance record for the Week 4 real-estate voice-agent capstone. `COMPLETE` means implemented and verified locally. `PARTIAL` means the local implementation is real but an external provider, live credentials, or production-scale component still requires staging verification. `NOT TESTED` means the code path exists but cannot be verified without the external dependency. The Day 7 service is the current integration surface; earlier notebooks remain supporting design, evaluation, and simulation artifacts.
 
 ## Day 1
 
@@ -27,10 +27,10 @@ This matrix is the acceptance record for the Week 4 real-estate voice-agent caps
 
 | Requirement | Implementation | Status | Gap / required acceptance | Verification |
 |---|---|---|---|---|
-| Speech -> STT -> LLM -> TTS voice path | `/voice/turn`, Deepgram adapter, Fish Audio adapter, microphone notebook client | PARTIAL | Requires provider credentials and a live audio smoke test | Voice endpoint and microphone cells |
+| Speech -> STT -> transcript normalization -> LangGraph -> TTS voice path | `/voice/turn`, Deepgram adapter, LLM normalizer with Gemini/Groq fallback, Fish Audio adapter, microphone notebook client | PARTIAL | Requires provider credentials, model access, and a live audio smoke test | Voice endpoint, normalization regression tests, and microphone cells |
 | Streaming and under-two-second latency measurement | Day 3 async simulation and monitoring metrics | PARTIAL | Current HTTP voice path is turn-based, not full duplex; measure provider TTFA in staging | Day 3 benchmark |
 | Interruptions, fillers, pauses, acknowledgements, turn-taking | Day 1 prompt, Day 3 pipeline simulation, graph responses | PARTIAL | Full-duplex barge-in requires a media gateway | Day 3 human evaluation |
-| Context memory including profile, budget, location, bedrooms, purpose, preferences, rejected and shortlisted properties, appointment state, history | SQLite sessions and expanded `VoiceAgentState` | COMPLETE locally | Cross-call identity/consent policy needs client decision | Durable session test |
+| Context memory including profile, budget, location, bedrooms, purpose, preferences, rejected and shortlisted properties, appointment state, history | SQLite/PostgreSQL sessions and expanded `VoiceAgentState` | COMPLETE locally | Cross-call identity/consent policy needs client decision | Durable session recovery test |
 | Price, trust, location, investment, builder, maintenance objections | Day 3 objection handler and graph responses | COMPLETE locally | Native-speaker quality review required | Objection tests/notebook |
 | Human evaluation framework | CSV template and Day 3 rubric | PARTIAL | Real recordings and reviewer scores are still required | Human evaluation template |
 
@@ -69,8 +69,8 @@ This matrix is the acceptance record for the Week 4 real-estate voice-agent caps
 
 | Requirement | Implementation | Status | Gap / required acceptance | Verification |
 |---|---|---|---|---|
-| FastAPI, voice services, LangGraph, vector layer, relational DB, monitoring, workflow automation | Day 7 app package and workflow artifacts | PARTIAL | Telephony, hosted vector DB, PostgreSQL and live n8n deployment remain environment work | Docker/CI and integration tests |
-| README and installation/configuration docs | Day 7 README and `.env.example` | COMPLETE locally | Add client-specific OAuth and deployment values | Documentation review |
+| FastAPI, voice services, transcript normalization, LangGraph, vector layer, relational DB, monitoring, workflow automation | Day 7 app package and workflow artifacts | PARTIAL | Telephony, hosted vector DB, PostgreSQL operations, live n8n deployment, and provider acceptance remain environment work | Day 7 tests, Docker/CI, and integration tests |
+| README and installation/configuration docs | Day 7 README, `.env.example`, notebook prompts, and handover package | COMPLETE locally | Add client-specific OAuth and deployment values | Documentation review |
 | Exact API documentation | `Documentation/02_api_documentation.md`, FastAPI OpenAPI | PARTIAL | Keep generated OpenAPI artifact in release package | `/openapi.json` |
 | User, admin, maintenance, troubleshooting guides | Documentation package | COMPLETE locally | Client-specific operational ownership required | Documentation review |
 | Monitoring and maintenance plan | `05_maintenance_plan.md` | COMPLETE as policy | Calibrate thresholds using live baseline | Maintenance review |
@@ -84,7 +84,7 @@ This matrix is the acceptance record for the Week 4 real-estate voice-agent caps
 | Secret management | Environment configuration, no committed `.env` | COMPLETE locally | Secret manager and rotation in deployment | Repository scan |
 | API authentication | Optional bearer/API-key middleware | COMPLETE locally | Set `API_AUTH_TOKEN` in production and add identity/role provider | Auth tests |
 | Rate limiting | Configurable per-client request limiter | COMPLETE locally | Replace process-local limiter with shared gateway/Redis at scale | Middleware tests |
-| Input validation and safe errors | Pydantic requests, audio-size checks, provider error normalization | COMPLETE locally | Add schema fuzzing and authenticated authorization tests | API tests |
+| Input validation and safe errors | Pydantic requests, audio-size checks, provider error normalization, safe transcript-normalizer fallback | COMPLETE locally | Add schema fuzzing and authenticated authorization tests | API and normalization tests |
 | SQL injection | Parameterized SQLite queries | COMPLETE locally | PostgreSQL driver must preserve parameterization | Database review |
 | CORS | Explicit `ALLOWED_ORIGINS` middleware | COMPLETE locally | Configure exact production origins | Startup configuration |
 | PII/transcript handling | Durable CRM tables, configurable retention purge, customer erasure/anonymization | PARTIAL | Set company-approved retention periods and verify managed storage encryption/access controls | Retention and erasure tests |
@@ -95,4 +95,11 @@ This matrix is the acceptance record for the Week 4 real-estate voice-agent caps
 
 ## Release decision
 
-The local capstone is testable and integrated. Production go-live requires a staging acceptance run with real Deepgram, Fish Audio, Gemini, Google Calendar, Gmail, PostgreSQL, vector-store, n8n, telephony, authentication, backups, and observability credentials. No local test result is presented as proof of those external systems.
+The local capstone is testable and integrated: the current service includes
+durable multi-turn state, transcript normalization fallback, provider-safe
+errors, authentication/rate controls, calendar/email lifecycle handling, and
+the documented regression suite. Production go-live still requires a staging
+acceptance run with real Deepgram, Fish Audio, Gemini/Groq model access,
+Google Calendar, Gmail, PostgreSQL roles, vector-store, n8n, telephony,
+backups, and observability credentials. No local test result is presented as
+proof of those external systems.

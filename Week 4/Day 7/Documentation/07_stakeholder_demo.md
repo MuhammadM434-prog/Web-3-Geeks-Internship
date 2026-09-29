@@ -17,6 +17,10 @@ Say:
 
 Show the running service.
 
+State the evidence boundary clearly: the local demo proves the application,
+database, graph, and adapter behavior; live provider delivery and voice
+quality require the configured staging environment.
+
 ## 1:00--2:00 --- Incoming customer call
 
 Start with a natural property inquiry.
@@ -44,6 +48,10 @@ Explain:
 
 > "When the knowledge base does not provide enough evidence, the system
 > abstains instead of hallucinating."
+
+For a microphone run, also show one harmless Urdu/Hindustani utterance whose
+STT result is non-Roman. Display the normalized Roman Urdu transcript and
+explain that the normalizer preserves meaning and does not authorize tools.
 
 ## 3:15--4:15 --- Intelligent recommendation
 
@@ -160,4 +168,5 @@ Before presenting:
 -   verify sold-property test;
 -   verify injection test;
 -   verify metrics;
+-   verify the selected Gemini/Groq model IDs and normalization path;
 -   avoid exposing real customer credentials or private records.

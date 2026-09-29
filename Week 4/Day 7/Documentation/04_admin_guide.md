@@ -11,6 +11,7 @@ The administrator is responsible for:
 -   checking notification records;
 -   monitoring errors and latency;
 -   validating integrations;
+-   validating STT transcript normalization and configured model access;
 -   reviewing security events;
 -   maintaining backups.
 
@@ -95,3 +96,17 @@ Administrators must protect:
 
 Credentials must be supplied through environment/configuration
 management rather than committed to source control.
+
+## 8. Provider configuration
+
+The notebook runtime configuration asks for the Gemini and Groq model IDs
+before importing `app.main` and `app.graph`. Confirm that the selected IDs are
+enabled for the API accounts; a configured key alone does not prove model
+access. The current defaults are `gemini-3.8-flash` and
+`openai/gpt-oss-120b`.
+
+For a Devanagari transcript, verify that the normalizer logs only provider
+type, exception type, and HTTP status. It must never log the transcript or an
+API key. If both providers fail, retaining the original transcript is the
+expected safe behavior; investigate the provider response before changing
+the graph or adding a manual transliteration rule.

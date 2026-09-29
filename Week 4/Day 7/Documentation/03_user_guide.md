@@ -15,6 +15,13 @@ speak naturally about what they are looking for and the agent can:
 -   reschedule an appointment;
 -   cancel an appointment.
 
+In the microphone workflow, Deepgram produces the transcript and Fish Audio
+speaks the response. If speech recognition returns Devanagari or another
+non-Roman script, the configured language provider attempts Roman Urdu
+transliteration before the conversation is processed. This is a transliteration
+step, not a translation step. If normalization is unavailable, the original
+transcript is retained rather than invented text being sent to the agent.
+
 ## 2. Example customer journey
 
 ### Step 1 --- Start
@@ -102,3 +109,7 @@ Examples:
 -   "That time doesn't work. What else is available?"
 -   "Move my appointment to 4 PM."
 -   "Cancel my appointment."
+
+The notebook microphone client is turn-based: press Enter, speak, wait for the
+silence timeout, and listen to the returned audio. It is not a full-duplex
+phone call and does not provide telephony barge-in behavior.
